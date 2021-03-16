@@ -1,0 +1,18 @@
+[ssh]
+key = "/home/USERNAME/.ssh/id_rsa"
+user = "USERNAME"
+host = "sshhost.example.net"
+
+[databases]
+
+ [databases.contractwork]
+ host_name = "dbhost1.example.net"
+ db_name = "DATABASE1"
+ user_name = "USER1" 
+ password = "PASSWORD1"
+
+ [databases.friantwp]
+ host_name = "dbhost2.example.net"
+ db_name = "DATABASE2"
+ user_name = "USER2"
+ password = "PASSWORD2"
