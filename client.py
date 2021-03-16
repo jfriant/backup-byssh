@@ -126,6 +126,10 @@ class RemoteClient:
         self.conn = self.__connect()
         stdin, stdout, stderr = self.client.exec_command(command)
         stdout.channel.recv_exit_status()
+        errors = stderr.readlines()
+        if len(errors) > 0:
+            error_msg = "\n".join(errors)
+            logger.error(f"Command failed: {error_msg}")
+            raise Exception("SSH Remote Command failed, see log")
         response = stdout.readlines()
-        response.extend(stderr.readlines())
         return response
