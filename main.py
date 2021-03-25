@@ -18,6 +18,8 @@ def main():
     parser.add_argument("-c", "--config", dest="config",
                         metavar="NAME", default=CONFIG_FILENAME,
                         help="Specify a configuration file")
+    parser.add_argument("-q", "--quiet", action="store_true",
+                        help="Do not print status messages")
 
     args = parser.parse_args()
 
@@ -30,12 +32,14 @@ def main():
     if not os.path.exists(BACKUP_FOLDER):
         os.mkdir(BACKUP_FOLDER)
 
-    print(f"Connecting to {config['ssh']['host']}...")
+    if not args.quiet:
+        print(f"Connecting to {config['ssh']['host']}...")
 
     remote = RemoteClient(config['ssh']['host'], config['ssh']['user'], config['ssh']['key'], None)
     for site_name in config['databases']:
         site_cfg = config['databases'][site_name]
-        print(f"[INFO] Backing up {site_name}...")
+        if not args.quiet:
+            print(f"[INFO] Backing up {site_name}...")
 
         dump_cmd = f"mysqldump --host={site_cfg['host_name']} --user={site_cfg['user_name']} --password={site_cfg['password']} --lock-tables --databases {site_cfg['db_name']}"
         # zip_cmd = f"bzip2 -c > ~/backup/{site_name}-{time_stamp}.sql.bz2"
