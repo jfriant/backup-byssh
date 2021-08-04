@@ -6,7 +6,9 @@ import os
 import toml
 from log import logger
 
-from client import RemoteClient
+from fabric import Connection
+# the custom SSH client is hanging on large files
+# from client import RemoteClient
 
 CONFIG_FILENAME = os.path.expanduser("~/.1and1db.toml")
 BACKUP_FOLDER = os.path.expanduser("~/backup")
@@ -36,22 +38,25 @@ def main():
     if not args.quiet:
         logger.info(f"Connecting to {config['ssh']['host']}...")
 
-    remote = RemoteClient(config['ssh']['host'], config['ssh']['user'], config['ssh']['key'], None)
-    for site_name in config['databases']:
-        site_cfg = config['databases'][site_name]
-        if not args.quiet:
-            logger.info(f"Backing up {site_name}...")
+    kwa = {
+        "key_filename": config['ssh']['key']
+    }
+    with Connection(config['ssh']['host'], config['ssh']['user'], connect_kwargs=kwa) as remote:
+        for site_name in config['databases']:
+            site_cfg = config['databases'][site_name]
+            if not args.quiet:
+                logger.info(f"Starting backup of {site_name}")
 
-        try:
             dump_cmd = f"mysqldump --host={site_cfg['host_name']} --user={site_cfg['user_name']} --password={site_cfg['password']} --lock-tables --databases {site_cfg['db_name']}"
-            # zip_cmd = f"bzip2 -c > ~/backup/{site_name}-{time_stamp}.sql.bz2"
-            result = remote.execute_single_command(dump_cmd)
-            b_result = "\n".join(result).encode('utf8')
-            fn_out = os.path.join(BACKUP_FOLDER, f"{site_name}-{time_stamp}.sql.bz2")
-            with open(fn_out, 'wb') as fd:
-                fd.write(bz2.compress(b_result))
-        except TypeError:
-            logger.warning(f'Backup failed for {site_name}')
+            result = remote.run(dump_cmd, hide=True)
+            if len(result.stderr) > 0:
+                error_msg = "\n".join(result.stderr)
+                logger.error(f"Command failed: {error_msg}")
+            else:
+                fn_out = os.path.join(BACKUP_FOLDER, f"{site_name}-{time_stamp}.sql.bz2")
+                b_output = result.stdout.encode('utf8')
+                with open(fn_out, 'wb') as fd:
+                    fd.write(bz2.compress(b_output))
 
 
 if __name__ == "__main__":
