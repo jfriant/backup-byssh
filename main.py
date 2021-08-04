@@ -4,6 +4,7 @@ import bz2
 import datetime
 import os
 import toml
+from log import logger
 
 from client import RemoteClient
 
@@ -33,21 +34,24 @@ def main():
         os.mkdir(BACKUP_FOLDER)
 
     if not args.quiet:
-        print(f"Connecting to {config['ssh']['host']}...")
+        logger.info(f"Connecting to {config['ssh']['host']}...")
 
     remote = RemoteClient(config['ssh']['host'], config['ssh']['user'], config['ssh']['key'], None)
     for site_name in config['databases']:
         site_cfg = config['databases'][site_name]
         if not args.quiet:
-            print(f"[INFO] Backing up {site_name}...")
+            logger.info(f"Backing up {site_name}...")
 
-        dump_cmd = f"mysqldump --host={site_cfg['host_name']} --user={site_cfg['user_name']} --password={site_cfg['password']} --lock-tables --databases {site_cfg['db_name']}"
-        # zip_cmd = f"bzip2 -c > ~/backup/{site_name}-{time_stamp}.sql.bz2"
-        result = remote.execute_single_command(dump_cmd)
-        b_result = "\n".join(result).encode('utf8')
-        fn_out = os.path.join(BACKUP_FOLDER, f"{site_name}-{time_stamp}.sql.bz2")
-        with open(fn_out, 'wb') as fd:
-            fd.write(bz2.compress(b_result))
+        try:
+            dump_cmd = f"mysqldump --host={site_cfg['host_name']} --user={site_cfg['user_name']} --password={site_cfg['password']} --lock-tables --databases {site_cfg['db_name']}"
+            # zip_cmd = f"bzip2 -c > ~/backup/{site_name}-{time_stamp}.sql.bz2"
+            result = remote.execute_single_command(dump_cmd)
+            b_result = "\n".join(result).encode('utf8')
+            fn_out = os.path.join(BACKUP_FOLDER, f"{site_name}-{time_stamp}.sql.bz2")
+            with open(fn_out, 'wb') as fd:
+                fd.write(bz2.compress(b_result))
+        except TypeError:
+            logger.warning(f'Backup failed for {site_name}')
 
 
 if __name__ == "__main__":
