@@ -50,7 +50,10 @@ def main():
             dump_cmd = f"mysqldump --host={site_cfg['host_name']} --user={site_cfg['user_name']} --password={site_cfg['password']} --lock-tables --databases {site_cfg['db_name']}"
             result = remote.run(dump_cmd, hide=True)
             if len(result.stderr) > 0:
-                error_msg = "\n".join(result.stderr)
+                if isinstance(result.stderr, list):
+                    error_msg = "\n".join(result.stderr)
+                else:
+                    error_msg = result.stderr
                 logger.error(f"Command failed: {error_msg}")
             else:
                 fn_out = os.path.join(BACKUP_FOLDER, f"{site_name}-{time_stamp}.sql.bz2")
