@@ -47,7 +47,8 @@ def main():
             if not args.quiet:
                 logger.info(f"Starting backup of {site_name}")
 
-            dump_cmd = f"mysqldump --host={site_cfg['host_name']} --user={site_cfg['user_name']} --password={site_cfg['password']} --lock-tables --databases {site_cfg['db_name']}"
+            # Dump command comes from: https://www.ionos.com/help/?id=2835
+            dump_cmd = f"mysqldump --no-tablespaces --host={site_cfg['host_name']} --user={site_cfg['user_name']} --password={site_cfg['password']} --databases {site_cfg['db_name']}"
             result = remote.run(dump_cmd, hide=True)
             if len(result.stderr) > 0:
                 if isinstance(result.stderr, list):
